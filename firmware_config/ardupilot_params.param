@@ -1,0 +1,106 @@
+# ArduPilot Parameter File — Navigation_ROSLess
+# Target: SpeedyBee F405 Mini, ArduPilot 4.7.0
+# Usage: python3 src/tools/upload_params.py --reboot
+#
+# After loading, REBOOT the FC before arming.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# SERIAL PORT — Pi companion link (SERIAL2 = FC port connected to Pi UART4)
+# ─────────────────────────────────────────────────────────────────────────────
+SERIAL2_PROTOCOL,2          # MAVLink 2
+SERIAL2_BAUD,921            # 921600 baud
+SERIAL2_OPTIONS,0           # Use MAVn_OPTIONS for forwarding instead of bit 10
+MAV1_OPTIONS,2              # Suppress forwarding (for newer ArduPilot versions)
+MAV2_OPTIONS,2              # Suppress forwarding (for newer ArduPilot versions)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GPS — Completely disabled
+# ─────────────────────────────────────────────────────────────────────────────
+GPS1_TYPE,0                 # No GPS
+EK3_GPS_CHECK,0             # Disable all GPS pre-arm checks (renamed from EK3_GPS_TYPE in 4.6.x)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# OPTICAL FLOW — EKF3 fuses OPTICAL_FLOW_RAD from companion
+# FLOW_TYPE=5 registers a MAVLink optical flow sensor so EKF3 accepts the
+# OPTICAL_FLOW_RAD messages from the Pi as a valid sensor source.
+# ─────────────────────────────────────────────────────────────────────────────
+FLOW_TYPE,5                 # 5 = MAVLink (OPTICAL_FLOW_RAD message from companion)
+EK3_FLOW_USE,1              # 1 = use optical flow when GPS unavailable (always our case)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RANGEFINDER 1 — Downward MTF-01P (floor distance, EKF altitude source)
+# ─────────────────────────────────────────────────────────────────────────────
+RNGFND1_TYPE,10             # 10 = MAVLink rangefinder (DISTANCE_SENSOR message)
+RNGFND1_ORIENT,25           # 25 = MAV_SENSOR_ROTATION_PITCH_270 (straight down)
+RNGFND1_MIN,0.01            # Tracks minimum range (1 cm)
+RNGFND1_MAX,8.0             # Dictates max tracking distance (8 meters)
+RNGFND1_GNDCLR,0.08         # 0.08 m ground clearance (user says drone sits ~7-8 cm off ground)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RANGEFINDER 2 — Upward MTF-01P (handled by Pi for ceiling map — FC does not use it)
+# ─────────────────────────────────────────────────────────────────────────────
+RNGFND2_TYPE,0              # 0 = Disabled — Pi reads ceiling distance directly via
+                             #     /dev/ttyAMA2 and uses it for local map visualisation.
+                             #     FC does not need ceiling data.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# EKF3 — Velocity-only, no absolute position
+# ─────────────────────────────────────────────────────────────────────────────
+EK3_ENABLE,1
+EK3_SRC1_POSXY,0            # 0 = None
+EK3_SRC1_VELXY,5            # 5 = OpticalFlow
+EK3_SRC1_POSZ,2             # 2 = RangeFinder
+EK3_SRC1_VELZ,0             # 0 = None
+EK3_SRC1_YAW,0              # 0 = None (gyro-only yaw integration)
+                             #     No compass on board, no GPS — gyro drift is accepted.
+                             #     GSF (=8) needs GPS velocity to converge — not usable here.
+                             #     Body-frame commands make slow yaw drift non-critical.
+EK3_SRC_OPTIONS,0           # 0 = no auto source fallback (prevents EKF trying to fall back
+                             #     to unavailable GPS when optical flow momentarily dips)
+EK3_FLOW_DELAY,10           # MAVLink flow latency (ms)
+EK3_RNG_USE_SPD,2.0         # Use rangefinder when speed < 2 m/s (always indoors)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# COMPASS — No compass on SpeedyBee F405 Mini
+# ─────────────────────────────────────────────────────────────────────────────
+COMPASS_USE,0               # No hardware compass — disable completely
+COMPASS_USE2,0
+COMPASS_USE3,0
+COMPASS_ENABLE,0            # Disable compass driver entirely (ArduPilot 4.6+ param)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AHRS / EKF SELECTION
+# ─────────────────────────────────────────────────────────────────────────────
+AHRS_EKF_TYPE,3             # Force EKF3 (most stable for optical-flow-only flight)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SAFETY — Headless / RC-less indoor flight
+# ─────────────────────────────────────────────────────────────────────────────
+ARMING_SKIPCHK,-1           # -1 = skip all arming checks (replaces ARMING_CHECK=0 in 4.7.0)
+ARMING_OPTIONS,0            # No special arming options
+BRD_SAFETY_DEFLT,0          # Safety switch OFF by default (correct name for this board)
+FS_THR_ENABLE,0             # Disable RC throttle failsafe (no RC connected)
+FS_EKF_ACTION,0             # 0 = do not reject mode changes when EKF is unhealthy
+                             #     (needed while EKF warms up on bench / first-start)
+RC_OVERRIDE_TIME,30         # Allow MAVLink RC override for 30 s without RC input
+DISARM_DELAY,0              # Do not auto-disarm after landing
+
+# ─────────────────────────────────────────────────────────────────────────────
+LOIT_SPEED_MS,1.5           # Max horizontal speed in Loiter (m/s — was LOIT_SPEED in cm/s)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AVOIDANCE & FENCE
+# NOTE: PRX1_TYPE and OA_TYPE NOT in this build. Wall avoidance handled in
+#       auto_navigate.py via RPLidar directly.
+# ─────────────────────────────────────────────────────────────────────────────
+AVOID_ENABLE,0              # 0 = Disable FC internal avoidance — Pi handles all obstacle
+                             #     avoidance via auto_navigate.py. FC avoidance would fight
+                             #     the Pi's velocity commands.
+FENCE_ENABLE,0              # Disable geofence (no GPS reference available)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MISCELLANEOUS
+# ─────────────────────────────────────────────────────────────────────────────
+FRAME_CLASS,1               # 1 = Quad
+FRAME_TYPE,1                # 1 = X configuration
+LOG_BITMASK,176126

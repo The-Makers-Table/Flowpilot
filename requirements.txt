@@ -1,0 +1,10 @@
+# Core MAVLink, Serial & Sensor Drivers
+pymavlink>=2.4.40
+pyserial>=3.5
+rplidar-roboticia>=0.9.2
+numpy>=1.24.0
+
+# Real-Time Web GCS Dashboards (src/dashboard/bridge.py & drone_server.py)
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+websockets>=12.0

@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Navigation Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#060A13;--surface:rgba(255,255,255,.04);--border:rgba(255,255,255,.08);
+  --accent:#00D4FF;--accent2:#7C3AED;--success:#10B981;--danger:#EF4444;
+  --warn:#F59E0B;--text:#E2E8F0;--dim:#64748B;--sw:304px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif;height:100vh;overflow:hidden}
+.layout{display:flex;height:100vh}
+
+/* ── SIDEBAR ─────────────────────────────────────────── */
+.sidebar{
+  width:var(--sw);flex-shrink:0;
+  background:rgba(6,10,19,.97);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow-y:auto;
+}
+.sidebar::-webkit-scrollbar{width:3px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+.hdr{
+  padding:18px 16px 14px;
+  background:linear-gradient(135deg,rgba(0,212,255,.07),rgba(124,58,237,.07));
+  border-bottom:1px solid var(--border);
+}
+.hdr-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px}
+.hdr h1{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--danger);transition:all .4s}
+.dot.on{background:var(--success);box-shadow:0 0 10px var(--success)}
+.hdr-sub{font-size:10px;color:var(--dim);font-family:'Space Mono',monospace}
+
+.card{margin:10px 10px 0;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 13px}
+.ct{font-size:9.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:9px}
+
+/* status badges */
+.st-row{display:flex;align-items:center;gap:7px;margin-bottom:7px}
+.badge{font-size:10px;font-family:'Space Mono',monospace;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:.04em}
+.badge.mode{background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.28);color:var(--accent)}
+.badge.armed{background:rgba(16,185,129,.14);border:1px solid rgba(16,185,129,.35);color:var(--success)}
+.badge.disarmed{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.28);color:var(--danger)}
+
+/* battery */
+.bat-row{display:flex;align-items:center;gap:8px}
+.bat-bar{flex:1;height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden}
+.bat-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--success),#34D399);transition:width .6s}
+.bat-txt{font-size:10px;font-family:'Space Mono',monospace;color:var(--dim);min-width:34px;text-align:right}
+
+/* pos grid */
+.pos-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.pos-item{background:rgba(255,255,255,.03);border-radius:6px;padding:7px 8px}
+.pos-lbl{font-size:8.5px;font-weight:600;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-bottom:2px}
+.pos-val{font-size:15px;font-weight:600;font-family:'Space Mono',monospace;color:var(--accent)}
+.pos-val.y2{color:var(--accent2)}.pos-u{font-size:9px;color:var(--dim);margin-left:1px}
+
+/* sensor chips */
+.s-row{display:flex;gap:5px}
+.s-chip{flex:1;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:6px;padding:7px 6px;text-align:center}
+.s-lbl{font-size:8.5px;color:var(--dim);font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px}
+.s-val{font-size:13px;font-weight:700;font-family:'Space Mono',monospace;color:var(--text)}
+.s-val.ok{color:var(--success)}.s-val.warn{color:var(--warn)}.s-val.bad{color:var(--dim)}
+
+/* controls */
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:7px}
+.mbtn{
+  font-size:9.5px;font-weight:700;letter-spacing:.05em;font-family:'Space Mono',monospace;
+  padding:6px 4px;border-radius:6px;border:1px solid var(--border);
+  background:rgba(255,255,255,.03);color:var(--dim);cursor:pointer;transition:all .15s;text-align:center;
+}
+.mbtn:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.07)}
+.mbtn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.12)}
+
+.alt-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.alt-row label{font-size:9.5px;color:var(--dim);flex-shrink:0}
+.alt-row input[type=range]{flex:1;accent-color:var(--accent)}
+.alt-row span{font-size:10px;font-family:'Space Mono',monospace;color:var(--accent);min-width:28px}
+
+.act-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.btn{
+  padding:9px 4px;border-radius:7px;border:none;
+  font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  cursor:pointer;transition:all .15s;font-family:'Space Grotesk',sans-serif;
+}
+.btn:active{transform:scale(.97)}.btn:disabled{opacity:.3;cursor:not-allowed}
+.btn-arm{background:rgba(16,185,129,.18);color:var(--success);border:1px solid rgba(16,185,129,.38)}
+.btn-arm:hover:not(:disabled){background:rgba(16,185,129,.32)}
+.btn-dis{background:rgba(239,68,68,.13);color:var(--danger);border:1px solid rgba(239,68,68,.32)}
+.btn-dis:hover:not(:disabled){background:rgba(239,68,68,.27)}
+.btn-to{background:rgba(0,212,255,.13);color:var(--accent);border:1px solid rgba(0,212,255,.32)}
+.btn-to:hover:not(:disabled){background:rgba(0,212,255,.25)}
+.btn-ld{background:rgba(245,158,11,.12);color:var(--warn);border:1px solid rgba(245,158,11,.32)}
+.btn-ld:hover:not(:disabled){background:rgba(245,158,11,.25)}
+.btn-rtl{background:rgba(124,58,237,.13);color:#A78BFA;border:1px solid rgba(124,58,237,.32);grid-column:span 2;margin-top:2px}
+.btn-rtl:hover:not(:disabled){background:rgba(124,58,237,.26)}
+
+/* log */
+.log-box{flex:1;overflow-y:auto;font-family:'Space Mono',monospace;font-size:9.5px;line-height:1.55;padding:0 1px}
+.log-box::-webkit-scrollbar{width:3px}
+.log-box::-webkit-scrollbar-thumb{background:var(--border)}
+.le{padding:2px 0;border-bottom:1px solid rgba(255,255,255,.03)}
+.lt{color:var(--dim);margin-right:4px}
+.le.info .lm{color:var(--text)}
+.le.warn .lm{color:var(--warn)}
+.le.error .lm{color:var(--danger)}
+.sp{height:10px}
+
+/* ── CANVAS ─────────────────────────────────────────── */
+.canvas-wrap{flex:1;position:relative;overflow:hidden}
+canvas{display:block;width:100%!important;height:100%!important}
+
+.scene-lbl{
+  position:absolute;top:14px;left:14px;
+  font-size:9.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;
+  color:rgba(0,212,255,.45);pointer-events:none;
+}
+
+/* HUD chips top-right */
+.hud{position:absolute;top:14px;right:14px;display:flex;gap:7px;pointer-events:none}
+.hchip{
+  background:rgba(6,10,19,.8);backdrop-filter:blur(8px);
+  border:1px solid var(--border);border-radius:8px;padding:7px 11px;
+}
+.hl{display:block;font-size:8.5px;color:var(--dim);letter-spacing:.1em;font-family:'Space Mono',monospace}
+.hv{display:block;font-size:14px;font-weight:700;font-family:'Space Mono',monospace;color:var(--accent)}
+
+/* attitude ring */
+.att-wrap{position:absolute;bottom:18px;right:16px;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- ═══════════════ SIDEBAR ═══════════════ -->
+<aside class="sidebar">
+
+  <div class="hdr">
+    <div class="hdr-row">
+      <h1>Drone Control</h1>
+      <div class="dot" id="connDot"></div>
+    </div>
+    <div class="hdr-sub" id="connLbl">Connecting…</div>
+  </div>
+
+  <!-- FC Status -->
+  <div class="card">
+    <div class="ct">Flight Controller</div>
+    <div class="st-row">
+      <span class="badge mode" id="modeB">UNKNOWN</span>
+      <span class="badge disarmed" id="armedB">DISARMED</span>
+    </div>
+    <div class="bat-row">
+      <div class="bat-bar"><div class="bat-fill" id="batFill" style="width:0%"></div></div>
+      <div class="bat-txt" id="batTxt">—</div>
+    </div>
+  </div>
+
+  <!-- Position -->
+  <div class="card">
+    <div class="ct">Position</div>
+    <div class="pos-grid">
+      <div class="pos-item"><div class="pos-lbl">X · North</div><div class="pos-val" id="pX">0.000<span class="pos-u">m</span></div></div>
+      <div class="pos-item"><div class="pos-lbl">Y · East</div><div class="pos-val" id="pY">0.000<span class="pos-u">m</span></div></div>
+      <div class="pos-item"><div class="pos-lbl">Alt · Up</div><div class="pos-val" id="pZ">0.00<span class="pos-u">m</span></div></div>
+      <div class="pos-item"><div class="pos-lbl">Yaw</div><div class="pos-val y2" id="pYaw">0.0<span class="pos-u">°</span></div></div>
+    </div>
+  </div>
+
+  <!-- Sensors -->
+  <div class="card">
+    <div class="ct">Sensors</div>
+    <div class="s-row">
+      <div class="s-chip"><div class="s-lbl">Floor</div><div class="s-val bad" id="sFloor">—</div></div>
+      <div class="s-chip"><div class="s-lbl">Ceiling</div><div class="s-val bad" id="sCeil">—</div></div>
+      <div class="s-chip"><div class="s-lbl">Flow Q</div><div class="s-val bad" id="sFlow">—</div></div>
+      <div class="s-chip"><div class="s-lbl">LiDAR</div><div class="s-val bad" id="sLidar">—</div></div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="card">
+    <div class="ct">Mode</div>
+    <div class="mode-grid">
+      <div class="mbtn" onclick="cmd('set_mode',{mode:'GUIDED_NOGPS'})">GUIDED<br>NOGPS</div>
+      <div class="mbtn" onclick="cmd('set_mode',{mode:'STABILIZE'})">STABILIZE</div>
+      <div class="mbtn" onclick="cmd('set_mode',{mode:'LOITER'})">LOITER</div>
+      <div class="mbtn" onclick="cmd('set_mode',{mode:'ALT_HOLD'})">ALT HOLD</div>
+    </div>
+    <div class="alt-row">
+      <label>Takeoff Alt</label>
+      <input type="range" id="altSlider" min="0.5" max="3.0" step="0.1" value="1.0" oninput="document.getElementById('altVal').textContent=this.value+'m'">
+      <span id="altVal">1.0m</span>
+    </div>
+    <div class="act-grid">
+      <button class="btn btn-arm"  id="btnArm"  onclick="cmd('arm')">ARM</button>
+      <button class="btn btn-dis"  id="btnDis"  onclick="cmd('disarm')">DISARM</button>
+      <button class="btn btn-to"   id="btnTo"   onclick="cmdTakeoff()">TAKEOFF</button>
+      <button class="btn btn-ld"   id="btnLd"   onclick="cmd('land')">LAND</button>
+      <button class="btn btn-rtl"  id="btnRtl"  onclick="cmd('rtl')">RETURN TO LAUNCH</button>
+    </div>
+  </div>
+
+  <div class="sp"></div>
+
+  <!-- Log -->
+  <div class="card" style="flex:1;display:flex;flex-direction:column;margin-bottom:10px;min-height:120px">
+    <div class="ct">Status Log</div>
+    <div class="log-box" id="logBox"></div>
+  </div>
+
+</aside>
+
+<!-- ═══════════════ 3D SCENE ═══════════════ -->
+<div class="canvas-wrap" id="canvasWrap">
+  <div class="scene-lbl">3D MAP · LIDAR + SENSORS</div>
+
+  <div class="hud">
+    <div class="hchip"><span class="hl">ALTITUDE</span><span class="hv" id="hudAlt">0.00m</span></div>
+    <div class="hchip"><span class="hl">SPEED</span><span class="hv" id="hudSpd">0.00m/s</span></div>
+    <div class="hchip"><span class="hl">YAW</span><span class="hv" id="hudYaw">0.0°</span></div>
+  </div>
+</div>
+
+</div><!-- .layout -->
+
+<!-- Three.js -->
+<script src="/static/three.min.js"></script>
+<script src="/static/OrbitControls.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════════
+// WEBSOCKET CLIENT
+// ═══════════════════════════════════════════════════
+let ws = null, state = null;
+
+// Connect immediately — before Three.js init, so WebSocket works even if 3D fails
+
+function connect() {
+  const url = `ws://${location.hostname}:${location.port}/ws`;
+  ws = new WebSocket(url);
+  ws.onopen = () => {
+    document.getElementById('connDot').classList.add('on');
+    document.getElementById('connLbl').textContent = 'Connected · ' + location.hostname;
+    addLog('info', 'WebSocket connected');
+  };
+  ws.onmessage = e => {
+    state = JSON.parse(e.data);
+    updateUI(state);
+    updateScene(state);
+  };
+  ws.onclose = () => {
+    document.getElementById('connDot').classList.remove('on');
+    document.getElementById('connLbl').textContent = 'Disconnected — retrying…';
+    setTimeout(connect, 2000);
+  };
+  ws.onerror = () => ws.close();
+}
+
+function cmd(type, extra) {
+  if (ws && ws.readyState === WebSocket.OPEN)
+    ws.send(JSON.stringify({ type, ...extra }));
+}
+
+function cmdTakeoff() {
+  const alt = parseFloat(document.getElementById('altSlider').value);
+  cmd('takeoff', { altitude: alt });
+}
+
+// ═══════════════════════════════════════════════════
+// UI UPDATER
+// ═══════════════════════════════════════════════════
+const modeButtons = document.querySelectorAll('.mbtn');
+
+function updateUI(s) {
+  const fc = s.fc, d = s.drone, sen = s.sensors;
+
+  // FC status
+  document.getElementById('modeB').textContent   = fc.mode;
+  const armedB = document.getElementById('armedB');
+  armedB.textContent = fc.armed ? 'ARMED' : 'DISARMED';
+  armedB.className = 'badge ' + (fc.armed ? 'armed' : 'disarmed');
+
+  // Active mode highlight
+  modeButtons.forEach(b => {
+    const bMode = b.getAttribute('onclick');
+    b.classList.toggle('active', bMode && bMode.includes(`'${fc.mode}'`));
+  });
+
+  // Battery
+  const pct = fc.battery_pct;
+  document.getElementById('batFill').style.width = (pct ?? 0) + '%';
+  document.getElementById('batTxt').textContent  = pct != null ? pct.toFixed(1)+'%' : '—';
+
+  // Position
+  document.getElementById('pX').innerHTML   = d.x.toFixed(3)+'<span class="pos-u">m</span>';
+  document.getElementById('pY').innerHTML   = d.y.toFixed(3)+'<span class="pos-u">m</span>';
+  document.getElementById('pZ').innerHTML   = d.z.toFixed(2)+'<span class="pos-u">m</span>';
+  document.getElementById('pYaw').innerHTML = d.yaw.toFixed(1)+'<span class="pos-u">°</span>';
+
+  // HUD
+  document.getElementById('hudAlt').textContent = d.z.toFixed(2)+'m';
+  document.getElementById('hudYaw').textContent = d.yaw.toFixed(1)+'°';
+  const spd = Math.sqrt(d.vx*d.vx + d.vy*d.vy).toFixed(2);
+  document.getElementById('hudSpd').textContent = spd+'m/s';
+
+  // Sensors
+  const fStr = v => v != null ? v.toFixed(2)+'m' : '—';
+  function sVal(id, val, label, okMin, okMax) {
+    const el = document.getElementById(id);
+    el.textContent = label != null ? label : (val != null ? val : '—');
+    el.className = 's-val ' + (val == null ? 'bad' : (val >= okMin && val <= okMax ? 'ok' : 'warn'));
+  }
+  sVal('sFloor', sen.floor_m, fStr(sen.floor_m), 0.1, 7.9);
+  sVal('sCeil',  sen.ceil_m,  fStr(sen.ceil_m),  0.1, 7.9);
+  const q = sen.flow_quality;
+  document.getElementById('sFlow').textContent = q != null ? q : '—';
+  document.getElementById('sFlow').className   = 's-val ' + (q == null ? 'bad' : q >= 50 ? 'ok' : 'warn');
+  const lp = sen.lidar_pts;
+  document.getElementById('sLidar').textContent = lp ?? '—';
+  document.getElementById('sLidar').className  = 's-val ' + (lp > 10 ? 'ok' : 'bad');
+
+  // Log
+  if (s.log && s.log.length) {
+    const lastEntry = s.log[s.log.length - 1];
+    if (!lastEntry._seen) {
+      lastEntry._seen = true;
+      addLog(lastEntry.sev, lastEntry.msg);
+    }
+  }
+}
+
+let _lastLogTs = 0;
+function addLog(sev, msg) {
+  const box = document.getElementById('logBox');
+  const div = document.createElement('div');
+  div.className = 'le ' + sev;
+  const now = new Date();
+  const ts = now.toTimeString().slice(0,8);
+  div.innerHTML = `<span class="lt">${ts}</span><span class="lm">${msg}</span>`;
+  box.appendChild(div);
+  if (box.children.length > 60) box.removeChild(box.firstChild);
+  box.scrollTop = box.scrollHeight;
+}
+
+// Start WebSocket connection immediately
+try { connect(); } catch(e) { console.error('connect() failed:', e); }
+
+// ═══════════════════════════════════════════════════
+// THREE.JS SCENE
+// ═══════════════════════════════════════════════════
+const container = document.getElementById('canvasWrap');
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.85;
+container.appendChild(renderer.domElement);
+
+const scene  = new THREE.Scene();
+scene.background = new THREE.Color(0x060A13);
+scene.fog = new THREE.Fog(0x060A13, 20, 60);
+
+const camera = new THREE.PerspectiveCamera(55, 1, 0.05, 100);
+camera.position.set(0, 6, 10);
+camera.lookAt(0, 0, 0);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 1;
+controls.maxDistance = 40;
+
+// ── LIGHTS ──────────────────────────────────────────
+scene.add(new THREE.AmbientLight(0x1a2a4a, 2.5));
+
+const sunLight = new THREE.DirectionalLight(0x7090C0, 1.2);
+sunLight.position.set(8, 12, 6);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.set(1024, 1024);
+scene.add(sunLight);
+
+const dronePt = new THREE.PointLight(0x00D4FF, 0, 8);  // intensity set in update
+scene.add(dronePt);
+
+// ── FLOOR GRID ──────────────────────────────────────
+const gridHelper = new THREE.GridHelper(40, 40, 0x0e1929, 0x0e1929);
+scene.add(gridHelper);
+
+// Floor plane (subtle)
+const floorMesh = new THREE.Mesh(
+  new THREE.PlaneGeometry(40, 40),
+  new THREE.MeshStandardMaterial({ color:0x050810, roughness:1, metalness:0 })
+);
+floorMesh.rotation.x = -Math.PI/2;
+floorMesh.receiveShadow = true;
+scene.add(floorMesh);
+
+// ── AXES HELPER ─────────────────────────────────────
+const axes = new THREE.AxesHelper(0.5);
+scene.add(axes);  // small axes at origin for reference
+
+// ── DRONE GROUP ─────────────────────────────────────
+const droneGroup = new THREE.Group();
+scene.add(droneGroup);
+
+// Body frame
+const bodyMat  = new THREE.MeshStandardMaterial({ color:0x1a2033, roughness:0.6, metalness:0.7 });
+const armMat   = new THREE.MeshStandardMaterial({ color:0x111825, roughness:0.7, metalness:0.5 });
+const propMat  = new THREE.MeshStandardMaterial({ color:0x203050, roughness:0.3, metalness:0.2, transparent:true, opacity:0.75 });
+const propMatA = new THREE.MeshStandardMaterial({ color:0x00AAFF, roughness:0.2, metalness:0.3, transparent:true, opacity:0.6 });
+
+// Center body
+const body = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.07, 0.28), bodyMat);
+body.castShadow = true;
+droneGroup.add(body);
+
+// 4 arms + motors
+const ARM_POSITIONS = [
+  [ 0.18, 0,  0.18],  // FR
+  [-0.18, 0, -0.18],  // RL
+  [-0.18, 0,  0.18],  // FL
+  [ 0.18, 0, -0.18],  // RR
+];
+
+const propellers = [];
+ARM_POSITIONS.forEach(([px, py, pz]) => {
+  // arm cylinder
+  const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.30, 8), armMat);
+  arm.rotation.z = Math.atan2(pz, px) + Math.PI/2;  // tilt arm toward tip
+  arm.position.set(px*0.5, py, pz*0.5);
+  // simple horizontal arm
+  const armH = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.02, 0.02), armMat);
+  armH.position.set(px*0.5, 0, 0);
+  droneGroup.add(armH);
+
+  // motor hub
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.04, 10), bodyMat);
+  hub.position.set(px, 0.025, pz);
+  droneGroup.add(hub);
+
+  // propeller disc
+  const prop = new THREE.Mesh(new THREE.CircleGeometry(0.085, 16), propMat.clone());
+  prop.rotation.x = -Math.PI/2;
+  prop.position.set(px, 0.04, pz);
+  droneGroup.add(prop);
+  propellers.push(prop);
+});
+
+// Arms as a simple X cross
+const armGeo = new THREE.BoxGeometry(0.55, 0.018, 0.018);
+const armA = new THREE.Mesh(armGeo, armMat); armA.rotation.y = Math.PI/4;
+const armB = new THREE.Mesh(armGeo, armMat); armB.rotation.y = -Math.PI/4;
+droneGroup.add(armA, armB);
+
+// Front LED (red small sphere)
+const frontLed = new THREE.Mesh(
+  new THREE.SphereGeometry(0.018, 8, 8),
+  new THREE.MeshStandardMaterial({ color:0xFF2222, emissive:0xFF1111, emissiveIntensity:1 })
+);
+frontLed.position.set(0, 0, -0.18);  // forward = -Z in drone local (North)
+droneGroup.add(frontLed);
+
+// Altitude line (drone → floor)
+const altLineMat = new THREE.LineBasicMaterial({ color:0x1A4060, transparent:true, opacity:0.5 });
+const altLineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0),new THREE.Vector3(0,-5,0)]);
+const altLine = new THREE.Line(altLineGeo, altLineMat);
+droneGroup.add(altLine);
+
+// ── LIDAR VISUALIZATION ──────────────────────────────
+// Lines from drone center to wall points
+const LIDAR_SECTORS = 72;
+const lidarLineMat = new THREE.LineBasicMaterial({ color:0x00D4FF, transparent:true, opacity:0.18, vertexColors:false });
+const lidarLinePositions = new Float32Array(LIDAR_SECTORS * 6);  // 2 verts × 3 floats per ray
+const lidarLineGeo = new THREE.BufferGeometry();
+lidarLineGeo.setAttribute('position', new THREE.BufferAttribute(lidarLinePositions, 3));
+const lidarLines = new THREE.LineSegments(lidarLineGeo, lidarLineMat);
+scene.add(lidarLines);
+
+// Wall points
+const wallPtsMat = new THREE.PointsMaterial({ color:0x00D4FF, size:0.06, transparent:true, opacity:0.75 });
+const wallPtsPositions = new Float32Array(LIDAR_SECTORS * 3);
+const wallPtsGeo = new THREE.BufferGeometry();
+wallPtsGeo.setAttribute('position', new THREE.BufferAttribute(wallPtsPositions, 3));
+const wallPts = new THREE.Points(wallPtsGeo, wallPtsMat);
+scene.add(wallPts);
+
+// Wall outline (connecting adjacent valid points)
+const wallLineMat = new THREE.LineBasicMaterial({ color:0x00D4FF, transparent:true, opacity:0.5 });
+let wallOutline = null;
+
+// ── UPDATE SCENE FROM STATE ──────────────────────────
+let _lastLidarData = [];
+
+function updateScene(s) {
+  if (!s) return;
+  const d = s.drone;
+  const armed = s.fc.armed;
+
+  // Drone position: Three.js(x=North, y=Alt, z=East)
+  droneGroup.position.set(d.x, d.z, d.y);
+
+  // Drone rotation (approximate mapping from NED to Three.js)
+  const yawRad   = d.yaw   * Math.PI / 180;
+  const pitchRad = d.pitch * Math.PI / 180;
+  const rollRad  = d.roll  * Math.PI / 180;
+  droneGroup.rotation.set(-pitchRad, -yawRad, rollRad, 'YXZ');
+
+  // Point light follows drone
+  dronePt.position.copy(droneGroup.position);
+  dronePt.position.y += 0.3;
+  dronePt.color.set(armed ? 0x00FF88 : 0x00AAFF);
+  dronePt.intensity = armed ? 1.5 : 0.6;
+
+  // Propeller materials when armed
+  propellers.forEach(p => {
+    p.material.color.set(armed ? 0x00D4FF : 0x203050);
+    p.material.opacity = armed ? 0.5 : 0.75;
+  });
+
+  // Altitude line
+  const altPts = altLineGeo.attributes.position;
+  altPts.setY(1, -d.z);   // extend to floor
+  altPts.needsUpdate = true;
+
+  // ── LIDAR ──
+  const lidar = s.lidar || [];
+  _lastLidarData = lidar;
+
+  const linePosAttr = lidarLineGeo.attributes.position;
+  const ptsPosAttr  = wallPtsGeo.attributes.position;
+
+  // valid wall point list for outline
+  const outlineVerts = [];
+  let prevValid = false;
+
+  for (let i = 0; i < LIDAR_SECTORS; i++) {
+    // line ray: drone → wall
+    const di = i < lidar.length ? lidar[i] : null;
+    let wx = d.x, wy = d.z, wz = d.y;  // default: drone position (invisible ray)
+    let valid = false;
+
+    if (di) {
+      const bodyAngle  = di[0] * Math.PI / 180;   // sector angle (body frame, from forward)
+      const worldAngle = yawRad + bodyAngle;       // world frame, from North
+      const dist = di[1];
+      const ned_north = dist * Math.cos(worldAngle);
+      const ned_east  = dist * Math.sin(worldAngle);
+      wx = d.x + ned_north;  // Three.js X = North
+      wz = d.y + ned_east;   // Three.js Z = East
+      wy = d.z;              // Three.js Y = altitude
+      valid = true;
+    }
+
+    // Ray start = drone center
+    linePosAttr.setXYZ(i*2,   d.x, d.z, d.y);
+    linePosAttr.setXYZ(i*2+1, wx,  wy,  wz);
+    ptsPosAttr.setXYZ(i, wx, wy, wz);
+
+    if (valid) outlineVerts.push(new THREE.Vector3(wx, wy, wz));
+  }
+
+  linePosAttr.needsUpdate = true;
+  ptsPosAttr.needsUpdate  = true;
+  lidarLineGeo.setDrawRange(0, LIDAR_SECTORS * 2);
+  wallPtsGeo.setDrawRange(0, LIDAR_SECTORS);
+
+  // Wall outline (closed polygon)
+  if (outlineVerts.length > 2) {
+    outlineVerts.push(outlineVerts[0]);  // close loop
+    if (wallOutline) { scene.remove(wallOutline); wallOutline.geometry.dispose(); }
+    const g = new THREE.BufferGeometry().setFromPoints(outlineVerts);
+    wallOutline = new THREE.Line(g, wallLineMat);
+    scene.add(wallOutline);
+  }
+
+  // Ceiling plane (transparent, at floor + ceiling dist)
+  if (s.sensors.ceil_m != null && s.sensors.floor_m != null) {
+    const ceilY = d.z + s.sensors.ceil_m;
+    if (!scene.getObjectByName('ceilPlane')) {
+      const cp = new THREE.Mesh(
+        new THREE.PlaneGeometry(20, 20),
+        new THREE.MeshStandardMaterial({ color:0x102030, transparent:true, opacity:0.12, side:THREE.DoubleSide })
+      );
+      cp.name = 'ceilPlane';
+      cp.rotation.x = -Math.PI/2;
+      scene.add(cp);
+    }
+    const cp = scene.getObjectByName('ceilPlane');
+    cp.position.y = ceilY;
+  }
+}
+
+// ── ANIMATION LOOP ──────────────────────────────────
+let propAngle = 0;
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  propAngle += 0.08;
+  propellers.forEach((p, i) => {
+    p.rotation.z = propAngle * (i%2===0 ? 1 : -1);  // alternating CW/CCW
+  });
+  renderer.render(scene, camera);
+}
+animate();
+
+// ── RESIZE ──────────────────────────────────────────
+function onResize() {
+  const w = container.clientWidth, h = container.clientHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h, false);
+}
+window.addEventListener('resize', onResize);
+onResize();
+
+addLog('info', 'Dashboard initialised');
+</script>
+</body>
+</html>
